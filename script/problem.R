@@ -124,12 +124,10 @@ O4 |>
 #' Binding the an observed table and past history tables give a superset of the history table at that point in time.
 
 bind_rows(O1) |>
-  distinct(id, .keep_all = TRUE) |>
   arrange(from, id) |>
   waldo::compare(H1)
 
 bind_rows(O2, D1) |>
-  distinct(id, .keep_all = TRUE) |>
   arrange(from, id) |>
   waldo::compare(H2)
 

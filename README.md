@@ -93,12 +93,12 @@ H4 <- tibble(
 )
 ```
 
-With that, we can define a function `at_time_simple()` that takes a
-history table and a point in time, and returns the observation table at
-that point in time.
+With that, we can define a function `at_time()` that takes a history
+table and a point in time, and returns the observation table at that
+point in time.
 
 ``` r
-at_time_simple <- function(V, time) {
+at_time <- function(V, time) {
   V |>
     filter(coalesce(from <= !!time, TRUE), coalesce(to > !!time, TRUE)) |>
     select(-from, -to) |>
@@ -106,7 +106,7 @@ at_time_simple <- function(V, time) {
 }
 
 H1 |>
-  at_time_simple(1) |>
+  at_time(1) |>
   waldo::compare(V1)
 ```
 
@@ -114,7 +114,7 @@ H1 |>
 
 ``` r
 H2 |>
-  at_time_simple(2) |>
+  at_time(2) |>
   waldo::compare(V2)
 ```
 
@@ -122,7 +122,7 @@ H2 |>
 
 ``` r
 H2 |>
-  at_time_simple(1) |>
+  at_time(1) |>
   waldo::compare(V1)
 ```
 
@@ -130,7 +130,7 @@ H2 |>
 
 ``` r
 H3 |>
-  at_time_simple(3) |>
+  at_time(3) |>
   waldo::compare(V3)
 ```
 
@@ -138,7 +138,7 @@ H3 |>
 
 ``` r
 H3 |>
-  at_time_simple(2) |>
+  at_time(2) |>
   waldo::compare(V2)
 ```
 
@@ -146,7 +146,7 @@ H3 |>
 
 ``` r
 H3 |>
-  at_time_simple(1) |>
+  at_time(1) |>
   waldo::compare(V1)
 ```
 
@@ -154,7 +154,7 @@ H3 |>
 
 ``` r
 H4 |>
-  at_time_simple(4) |>
+  at_time(4) |>
   waldo::compare(V4)
 ```
 
@@ -162,7 +162,7 @@ H4 |>
 
 ``` r
 H4 |>
-  at_time_simple(3) |>
+  at_time(3) |>
   waldo::compare(V3)
 ```
 
@@ -170,7 +170,7 @@ H4 |>
 
 ``` r
 H4 |>
-  at_time_simple(2) |>
+  at_time(2) |>
   waldo::compare(V2)
 ```
 
@@ -178,7 +178,7 @@ H4 |>
 
 ``` r
 H4 |>
-  at_time_simple(1) |>
+  at_time(1) |>
   waldo::compare(V1)
 ```
 
@@ -246,7 +246,6 @@ the history table at that point in time.
 
 ``` r
 bind_rows(O1) |>
-  distinct(id, .keep_all = TRUE) |>
   arrange(from, id) |>
   waldo::compare(H1)
 ```
@@ -255,7 +254,6 @@ bind_rows(O1) |>
 
 ``` r
 bind_rows(O2, D1) |>
-  distinct(id, .keep_all = TRUE) |>
   arrange(from, id) |>
   waldo::compare(H2)
 ```
@@ -264,80 +262,24 @@ bind_rows(O2, D1) |>
 
 ``` r
 bind_rows(O3, D2, D1) |>
-  distinct(id, .keep_all = TRUE) |>
   arrange(from, id) |>
   waldo::compare(H3)
 ```
 
-    ## `attr(old, 'row.names')`: 1 2  
-    ## `attr(new, 'row.names')`: 1 2 3
-    ## 
-    ## old vs new
-    ##            from to id x
-    ## - old[1, ]    2 NA  2 b
-    ## - old[2, ]    3 NA  1 c
-    ## + new[1, ]    1  3  1 a
-    ## + new[2, ]    2 NA  2 b
-    ## + new[3, ]    3 NA  1 c
-    ## 
-    ## `old$from`: 2 3  
-    ## `new$from`: 1 2 3
-    ## 
-    ## `old$to[2:2]`:      NA
-    ##      `new$to`: 3 NA NA
-    ## 
-    ## `old$id`: 2 1  
-    ## `new$id`: 1 2 1
-    ## 
-    ## `old$x`: "b" "c"    
-    ## `new$x`: "a" "b" "c"
+    ## ✔ No differences
 
 ``` r
 bind_rows(O4, D3, D2, D1) |>
-  distinct(id, .keep_all = TRUE) |>
   arrange(from, id) |>
   waldo::compare(H4)
 ```
 
-    ## `attr(old, 'row.names')`: 1 2  
-    ## `attr(new, 'row.names')`: 1 2 3
-    ## 
-    ## old vs new
-    ##            from to id x
-    ## - old[1, ]    2 NA  2 b
-    ## - old[2, ]    3  4  1 c
-    ## + new[1, ]    1  3  1 a
-    ## + new[2, ]    2 NA  2 b
-    ## + new[3, ]    3  4  1 c
-    ## 
-    ## `old$from`: 2 3  
-    ## `new$from`: 1 2 3
-    ## 
-    ## `old$to`: NA  4  
-    ## `new$to`:  3 NA 4
-    ## 
-    ## `old$id`: 2 1  
-    ## `new$id`: 1 2 1
-    ## 
-    ## `old$x`: "b" "c"    
-    ## `new$x`: "a" "b" "c"
+    ## ✔ No differences
 
-This allows constructing a function `at_time()` that takes an
-observation table and a difference table, and returns the observation
-table at that point in time. The only additional step is to keep the
-first row for each id. If the order plays a role, the rows can be sorted
-by `id`.
+Therefore, the `at_time()` function also works when combining and
+observation table with difference tables.
 
 ``` r
-at_time <- function(V, time) {
-  V |>
-    filter(coalesce(from <= !!time, TRUE), coalesce(to > !!time, TRUE)) |>
-    # Keep the first row for each id
-    distinct(id, .keep_all = TRUE) |>
-    select(-from, -to) |>
-    arrange(id)
-}
-
 O4 |>
   at_time(4)
 ```
@@ -497,7 +439,7 @@ We know how to extract `V3` from `O3`:
 
 ``` r
 O3 |>
-  at_time_simple(3) |>
+  at_time(3) |>
   waldo::compare(V3)
 ```
 
@@ -713,3 +655,9 @@ V1 |>
 
 This defines a process for efficiently maintaining the observation and
 difference tables as new data arrives.
+
+## Maintaining an inline history table
+
+The approach above is useful if the data is stored in multiple flat
+files. Given `H3` and `V4`, how to update `H3` in the most efficient way
+so that it becomes `H4`?
