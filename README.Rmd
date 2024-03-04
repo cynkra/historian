@@ -109,6 +109,8 @@ The history tables can be decomposed into two tables: `O` (observation) and `D` 
 The observation table contains the details from the history table at the point in time, and is identical to the data at that point in time, save for the `from` and `to` columns.
 The difference table contains the changes that happened compared to the prior point in time.
 
+Because we want to avoid storing the same data multiple times, we omit rows in a difference table that are identical to rows found in previous difference tables.
+
 ```{r}
 O1 <- H1
 O1 |>
@@ -129,6 +131,7 @@ O3 |>
   select(-from, -to) |>
   waldo::compare(V3)
 
+# This does not contain H4[1, ], on purpose:
 D3 <- H4[3, ]
 
 O4 <- H4[2, ]
@@ -152,10 +155,12 @@ bind_rows(O2, D1) |>
   waldo::compare(H2)
 
 bind_rows(O3, D2, D1) |>
+  distinct(id, .keep_all = TRUE) |>
   arrange(from, id) |>
   waldo::compare(H3)
 
 bind_rows(O4, D3, D2, D1) |>
+  distinct(id, .keep_all = TRUE) |>
   arrange(from, id) |>
   waldo::compare(H4)
 ```

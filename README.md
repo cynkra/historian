@@ -193,6 +193,10 @@ that point in time, save for the `from` and `to` columns. The difference
 table contains the changes that happened compared to the prior point in
 time.
 
+Because we want to avoid storing the same data multiple times, we omit
+rows in a difference table that are identical to rows found in previous
+difference tables.
+
 ``` r
 O1 <- H1
 O1 |>
@@ -225,6 +229,7 @@ O3 |>
     ## ✔ No differences
 
 ``` r
+# This does not contain H4[1, ], on purpose:
 D3 <- H4[3, ]
 
 O4 <- H4[2, ]
@@ -259,19 +264,63 @@ bind_rows(O2, D1) |>
 
 ``` r
 bind_rows(O3, D2, D1) |>
+  distinct(id, .keep_all = TRUE) |>
   arrange(from, id) |>
   waldo::compare(H3)
 ```
 
-    ## ✔ No differences
+    ## `attr(old, 'row.names')`: 1 2  
+    ## `attr(new, 'row.names')`: 1 2 3
+    ## 
+    ## old vs new
+    ##            from to id x
+    ## - old[1, ]    2 NA  2 b
+    ## - old[2, ]    3 NA  1 c
+    ## + new[1, ]    1  3  1 a
+    ## + new[2, ]    2 NA  2 b
+    ## + new[3, ]    3 NA  1 c
+    ## 
+    ## `old$from`: 2 3  
+    ## `new$from`: 1 2 3
+    ## 
+    ## `old$to[2:2]`:      NA
+    ##      `new$to`: 3 NA NA
+    ## 
+    ## `old$id`: 2 1  
+    ## `new$id`: 1 2 1
+    ## 
+    ## `old$x`: "b" "c"    
+    ## `new$x`: "a" "b" "c"
 
 ``` r
 bind_rows(O4, D3, D2, D1) |>
+  distinct(id, .keep_all = TRUE) |>
   arrange(from, id) |>
   waldo::compare(H4)
 ```
 
-    ## ✔ No differences
+    ## `attr(old, 'row.names')`: 1 2  
+    ## `attr(new, 'row.names')`: 1 2 3
+    ## 
+    ## old vs new
+    ##            from to id x
+    ## - old[1, ]    2 NA  2 b
+    ## - old[2, ]    3  4  1 c
+    ## + new[1, ]    1  3  1 a
+    ## + new[2, ]    2 NA  2 b
+    ## + new[3, ]    3  4  1 c
+    ## 
+    ## `old$from`: 2 3  
+    ## `new$from`: 1 2 3
+    ## 
+    ## `old$to`: NA  4  
+    ## `new$to`:  3 NA 4
+    ## 
+    ## `old$id`: 2 1  
+    ## `new$id`: 1 2 1
+    ## 
+    ## `old$x`: "b" "c"    
+    ## `new$x`: "a" "b" "c"
 
 This allows constructing a function `at_time()` that takes an
 observation table and a difference table, and returns the observation
